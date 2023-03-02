@@ -25,3 +25,5 @@ steps:
     appType: 'webAppLinux'
     appName: $(appName)
     package: '$(System.DefaultWorkingDirectory)/**/*.zip'
+    deployToSlotOrASE: true
+    slotName: 'staging'
