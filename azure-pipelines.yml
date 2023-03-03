@@ -13,21 +13,30 @@ variables:
   buildConfiguration: 'Release'
   deployToProduction: false
 
+sum(irate(container_cpu_usage_seconds_total{kubernetes_container_name=~".+", kubernetes_namespace=~".+"}[20s])) by (kubernetes_namespace,kubernetes_container_name) + 
+topk(5,avg_over_time(sum(irate(container_cpu_usage_seconds_total{kubernetes_container_name=~".+", kubernetes_namespace=~".+"}[20s])) 
+by (kubernetes_namespace,kubernetes_container_name)[$__range:4h]))*0
+
+
+
 stages:
-- stage: BUILD_PUBLISH
+- stage: 'BUILD_PUBLISH'
   jobs:
-  - job: BUILD
-    steps:
-    - script: dotnet build --configuration $(buildConfiguration)
-    displayName: 'dotnet build $(buildConfiguration)'
   - job: PUBLISH
     steps:
     - task: DotNetCoreCLI@2
+      displayName: 'Build the project - $(buildConfiguration)'
+      inputs:
+        command: 'build'
+        arguments: '--configuration $(buildConfiguration)'
+        projects: '**/*.csproj'
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish the project - $(buildConfiguration)'
       inputs:
         command: 'publish'
         publishWebProjects: true
 
-- stage: DEPLOY_STAGING
+- stage: 'DEPLOY_STAGING'
   dependsOn: BUILD_PUBLISH
   jobs:
   - job: DEPLOY_STAGING
@@ -42,7 +51,7 @@ stages:
         deployToSlotOrASE: true
         slotName: 'staging'
 
-- stage: DEPLOY_PRODUCTION
+- stage: 'DEPLOY_PRODUCTION'
   dependsOn: BUILD_PUBLISH
   condition: eq(variables['deployToProduction'], 'true')
   jobs:
