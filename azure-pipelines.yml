@@ -14,7 +14,7 @@ variables:
   deployToProduction: false
 
 stages:
-- stage: BUILD
+- stage: BUILD_PUBLISH
   jobs:
   - job: BUILD
     steps:
@@ -28,6 +28,7 @@ stages:
         publishWebProjects: true
 
 - stage: DEPLOY_STAGING
+  dependsOn: BUILD_PUBLISH
   jobs:
   - job: DEPLOY_STAGING
     steps:
@@ -42,6 +43,7 @@ stages:
         slotName: 'staging'
 
 - stage: DEPLOY_PRODUCTION
+  dependsOn: BUILD_PUBLISH
   condition: eq(variables['deployToProduction'], 'true')
   jobs:
   - job: DEPLOY_PRODUCTION
