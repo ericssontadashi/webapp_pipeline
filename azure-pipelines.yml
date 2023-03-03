@@ -29,23 +29,34 @@ stages:
       inputs:
         command: 'publish'
         publishWebProjects: true
+        arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
+    - publish: '$(Build.ArtifactStagingDirectory)'
+      artifact: drop
 
 - stage: 'DEPLOY_STAGING'
   dependsOn: BUILD_PUBLISH
   jobs:
-  - job: DEPLOY_STAGING
-    steps:
-    - download: current
-      artifact: drop
-    - task: AzureWebApp@1
-      displayName: 'Deploy to Staging'
-      inputs:
-        azureSubscription: $(azureSubscription)
-        appType: 'webAppLinux'
-        appName: $(appName)
-        package: '$(System.DefaultWorkingDirectory)/**/*.zip'
-        deployToSlotOrASE: true
-        slotName: 'staging'
+  - deployment: Deploy
+    pool:
+      vmImage: 'ubuntu-20.04'
+    environment: stg
+    variables:
+    - group: Release
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Staging'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webAppLinux'
+              appName: $(appName)
+              package: '$(System.DefaultWorkingDirectory)/**/*.zip'
+              deployToSlotOrASE: true
+              slotName: 'staging'
 
 - stage: 'DEPLOY_PRODUCTION'
   dependsOn: BUILD_PUBLISH
