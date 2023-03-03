@@ -35,6 +35,8 @@ stages:
   jobs:
   - job: DEPLOY_STAGING
     steps:
+    - download: current
+      artifact: drop
     - task: AzureWebApp@1
       displayName: 'Deploy to Staging'
       inputs:
