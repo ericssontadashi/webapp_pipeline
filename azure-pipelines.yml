@@ -11,19 +11,48 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
+  deployToProduction: false
 
-steps:
-- script: dotnet build --configuration $(buildConfiguration)
-  displayName: 'dotnet build $(buildConfiguration)'
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'publish'
-    publishWebProjects: true
-- task: AzureWebApp@1
-  inputs:
-    azureSubscription: $(azureSubscription)
-    appType: 'webAppLinux'
-    appName: $(appName)
-    package: '$(System.DefaultWorkingDirectory)/**/*.zip'
-    deployToSlotOrASE: true
-    slotName: 'staging'
+stages:
+- stage: BUILD
+  jobs:
+  - job: BUILD
+    steps:
+    - script: dotnet build --configuration $(buildConfiguration)
+    displayName: 'dotnet build $(buildConfiguration)'
+  - job: PUBLISH
+    steps:
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+
+- stage: DEPLOY STAGING
+  jobs:
+  - job: DEPLOY_STAGING
+    steps:
+    - task: AzureWebApp@1
+      displayName: 'Deploy to Staging'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        appType: 'webAppLinux'
+        appName: $(appName)
+        package: '$(System.DefaultWorkingDirectory)/**/*.zip'
+        deployToSlotOrASE: true
+        slotName: 'staging'
+
+- stage: DEPLOY PRODUCTION
+  condition: eq(variables['deployToProduction'], 'true')
+  jobs:
+  - job: DEPLOY_PRODUCTION
+    steps:
+    - task: AzureWebApp@1
+      displayName: 'Deploy to Production'
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+      inputs:
+        azureSubscription: $(azureSubscription)
+        appType: 'webAppLinux'
+        appName: $(appName)
+        package: '$(System.DefaultWorkingDirectory)/**/*.zip'
+        deployToSlotOrASE: true
+        slotName: 'production'
