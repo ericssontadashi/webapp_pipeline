@@ -39,6 +39,7 @@ stages:
   - deployment: Deploy
     pool:
       vmImage: 'ubuntu-20.04'
+    environment: stg
     variables:
     - group: Release
     strategy:
