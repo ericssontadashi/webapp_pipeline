@@ -13,12 +13,6 @@ variables:
   buildConfiguration: 'Release'
   deployToProduction: false
 
-sum(irate(container_cpu_usage_seconds_total{kubernetes_container_name=~".+", kubernetes_namespace=~".+"}[20s])) by (kubernetes_namespace,kubernetes_container_name) + 
-topk(5,avg_over_time(sum(irate(container_cpu_usage_seconds_total{kubernetes_container_name=~".+", kubernetes_namespace=~".+"}[20s])) 
-by (kubernetes_namespace,kubernetes_container_name)[$__range:4h]))*0
-
-
-
 stages:
 - stage: 'BUILD_PUBLISH'
   jobs:
